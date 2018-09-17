@@ -32,6 +32,23 @@ public class MATLABEngineSingleton {
         return engine != null;
     }
 
+    public String evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
+        if (!isEngineReady()) {
+            logger.info("MATLAB Engine not ready");
+            return null;
+        }
+        String result;
+        try {
+            engine.putVariable(varIn, valueIn);
+            engine.eval(statement, MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
+            result = engine.getVariable(varOut);
+        } catch (Exception e) {
+            logger.info("", e);
+            return null;
+        }
+        return result;
+    }
+
     public static MATLABEngineSingleton getInstance() {
         if (instance == null) {
             instance = new MATLABEngineSingleton();

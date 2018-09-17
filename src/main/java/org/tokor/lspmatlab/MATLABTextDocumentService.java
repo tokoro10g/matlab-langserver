@@ -61,24 +61,6 @@ public class MATLABTextDocumentService implements TextDocumentService {
         return file.exists() && path.endsWith(".m");
     }
 
-    private String evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
-        if (!MATLABEngineSingleton.getInstance().isEngineReady()) {
-            logger.info("MATLAB Engine not ready");
-            return null;
-        }
-        String result;
-        try {
-            MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
-            eng.putVariable(varIn, valueIn);
-            eng.eval(statement, MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
-            result = eng.getVariable(varOut);
-        } catch (Exception e) {
-            logger.info("", e);
-            return null;
-        }
-        return result;
-    }
-
     @Override
     public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams position) {
         return CompletableFutures.computeAsync(checker -> {
@@ -90,7 +72,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
+            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
                     "tc___ = TabCompletionImpl();" +
                     "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
                     "while ~f___.isDone(); pause(0.01); end;" +
@@ -150,7 +132,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
+            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
                     "fc___ = MFunctionCall.getInstance(str___);" +
                     "result___ = char(fc___.createSignatureString());", "str___", src.substring(0, byteIndex), "result___");
             if (rs == null) {
@@ -214,7 +196,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 }
             }
 
-            String rs = evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
+            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
             if (rs == null) {
                 return null;
             }
