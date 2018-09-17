@@ -71,14 +71,13 @@ public class MATLABTextDocumentService implements TextDocumentService {
             String rs;
             try {
                 MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
-                StringWriter writer = new StringWriter();
                 eng.putVariable("str___", src);
                 eng.eval("import com.mathworks.jmi.tabcompletion.*;" +
                         "tc___ = TabCompletionImpl();" +
                         "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
                         "while ~f___.isDone(); pause(0.01); end;" +
-                        "result = f___.get(); clear tc___ f___ str___", writer, null);
-                rs = eng.getVariable("result");
+                        "result___ = f___.get();", MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
+                rs = eng.getVariable("result___");
             } catch (Exception e) {
                 logger.info("", e);
                 return Either.forLeft(new ArrayList());
