@@ -38,6 +38,8 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
         signatureHelpOptions.setTriggerCharacters(Arrays.asList("("));
         capabilities.setSignatureHelpProvider(signatureHelpOptions);
 
+        capabilities.setDefinitionProvider(true);
+
         InitializeResult result = new InitializeResult(capabilities);
         return CompletableFuture.completedFuture(result);
     }

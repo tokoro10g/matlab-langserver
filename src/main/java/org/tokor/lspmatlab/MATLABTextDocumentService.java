@@ -12,7 +12,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.StringWriter;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -150,65 +150,88 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            if (!MATLABEngineSingleton.getInstance().isEngineReady()) {
-                logger.info("MATLAB Engine not ready");
+            String rs = evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
+                    "fc___ = MFunctionCall.getInstance(str___);" +
+                    "result___ = char(fc___.createSignatureString());", "str___", src.substring(0, byteIndex), "result___");
+            if (rs == null) {
                 return null;
             }
 
-            String rs;
-            SignatureHelp signatureHelp = null;
-            try {
-                MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
-                eng.putVariable("str___", src.substring(0, byteIndex));
-                eng.eval("import com.mathworks.mlwidgets.help.functioncall.*;" +
-                        "fc___ = MFunctionCall.getInstance(str___);" +
-                        "result___ = char(fc___.createSignatureString());", MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
-                rs = eng.getVariable("result___");
+            List<SignatureInformation> items = new ArrayList<>();
 
-                List<SignatureInformation> items = new ArrayList<>();
+            final Matcher matcher = Pattern.compile("<div>(.+?)</div>").matcher(rs);
+            int activeSignature = 0;
+            int activeParameter = 0;
+            while (matcher.find()) {
+                String item = matcher.group(1);
 
-                final Matcher matcher = Pattern.compile("<div>(.+?)</div>").matcher(rs);
-                int activeSignature = 0;
-                int activeParameter = 0;
-                while (matcher.find()) {
-                    String item = matcher.group(1);
-
-                    int boldIndex = item.indexOf("<b>");
-                    if (boldIndex > -1) {
-                        int commaIndex = 0, activeArgIndex = -1;
-                        while (commaIndex != -1 && commaIndex < boldIndex) {
-                            commaIndex = item.indexOf(",", commaIndex + 1);
-                            activeArgIndex++;
-                        }
-                        if (activeParameter < activeArgIndex)
-                            activeParameter = activeArgIndex;
-                    } else {
-                        activeParameter = -1;
+                int boldIndex = item.indexOf("<b>");
+                if (boldIndex > -1) {
+                    int commaIndex = 0, activeArgIndex = -1;
+                    while (commaIndex != -1 && commaIndex < boldIndex) {
+                        commaIndex = item.indexOf(",", commaIndex + 1);
+                        activeArgIndex++;
                     }
-
-                    item = item.replaceAll("\\<[^>]*>", "");
-                    SignatureInformation info = new SignatureInformation(item);
-
-                    final Matcher matcher2 = Pattern.compile("\\((.*?)\\)").matcher(item);
-                    if (matcher2.find()) {
-                        info.setParameters(Arrays.asList(matcher2.group(1).split(",")).stream().map(ParameterInformation::new).collect(Collectors.toList()));
+                    if (activeParameter < activeArgIndex) {
+                        activeParameter = activeArgIndex;
                     }
-                    items.add(info);
+                } else {
+                    activeParameter = -1;
                 }
-                signatureHelp = new SignatureHelp(items, activeSignature, activeParameter);
 
-                logger.info(rs);
-            } catch (Exception e) {
-                logger.info("", e);
-                return null;
+                item = item.replaceAll("\\<[^>]*>", "");
+                SignatureInformation info = new SignatureInformation(item);
+
+                final Matcher matcher2 = Pattern.compile("\\((.*?)\\)").matcher(item);
+                if (matcher2.find()) {
+                    info.setParameters(Arrays.asList(matcher2.group(1).split(",")).stream().map(ParameterInformation::new).collect(Collectors.toList()));
+                }
+                items.add(info);
             }
-            return signatureHelp;
+
+            return new SignatureHelp(items, activeSignature, activeParameter);
         });
     }
 
     @Override
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-        return CompletableFuture.completedFuture(null);
+        return CompletableFutures.computeAsync(checker -> {
+            String src = this.src.get();
+            int currentLineIndex = position.getPosition().getLine();
+            int currentCharIndex = position.getPosition().getCharacter();
+
+            int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
+            String functionName = "";
+            final Matcher matcher = Pattern.compile("\\w+").matcher(src);
+            int start = 0;
+            int end = 0;
+            while (matcher.find()) {
+                start = matcher.start();
+                end = matcher.end();
+                if (start <= byteIndex && byteIndex <= end) {
+                    functionName = src.subSequence(start, end).toString();
+                    break;
+                }
+            }
+
+            String rs = evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
+            if (rs == null) {
+                return null;
+            }
+            logger.info(rs);
+            if (!isValidMFilePath(rs)) {
+                Matcher matcher2 = Pattern.compile("built-in \\((.*?)\\)").matcher(rs);
+                if (matcher2.find()) {
+                    // built-in function
+                    rs = matcher2.group(1) + ".m";
+                } else {
+                    return null;
+                }
+            }
+
+            Location l = new Location("file://" + rs, new Range(new Position(0, 0), new Position(0, 0)));
+            return Arrays.asList(l);
+        });
     }
 
     @Override
