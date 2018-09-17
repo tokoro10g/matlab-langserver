@@ -56,6 +56,29 @@ public class MATLABTextDocumentService implements TextDocumentService {
         return pos + charIndex + (pos == 0 ? 0 : 1);
     }
 
+    private static boolean isValidMFilePath(String path) {
+        File file = new File(path);
+        return file.exists() && path.endsWith(".m");
+    }
+
+    private String evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
+        if (!MATLABEngineSingleton.getInstance().isEngineReady()) {
+            logger.info("MATLAB Engine not ready");
+            return null;
+        }
+        String result;
+        try {
+            MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
+            eng.putVariable(varIn, valueIn);
+            eng.eval(statement, MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
+            result = eng.getVariable(varOut);
+        } catch (Exception e) {
+            logger.info("", e);
+            return null;
+        }
+        return result;
+    }
+
     @Override
     public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams position) {
         return CompletableFutures.computeAsync(checker -> {
@@ -67,23 +90,12 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            if (!MATLABEngineSingleton.getInstance().isEngineReady()) {
-                logger.info("MATLAB Engine not ready");
-                return Either.forLeft(new ArrayList());
-            }
-
-            String rs;
-            try {
-                MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
-                eng.putVariable("str___", src);
-                eng.eval("import com.mathworks.jmi.tabcompletion.*;" +
-                        "tc___ = TabCompletionImpl();" +
-                        "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
-                        "while ~f___.isDone(); pause(0.01); end;" +
-                        "result___ = f___.get();", MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
-                rs = eng.getVariable("result___");
-            } catch (Exception e) {
-                logger.info("", e);
+            String rs = evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
+                    "tc___ = TabCompletionImpl();" +
+                    "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
+                    "while ~f___.isDone(); pause(0.01); end;" +
+                    "result___ = f___.get();", "str___", src, "result___");
+            if (rs == null) {
                 return Either.forLeft(new ArrayList());
             }
 
