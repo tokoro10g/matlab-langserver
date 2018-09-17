@@ -14,10 +14,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.mathworks.engine.*;
 
@@ -125,7 +129,69 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
-        return CompletableFuture.completedFuture(null);
+        return CompletableFutures.computeAsync(checker -> {
+            String src = this.src.get();
+            int currentLineIndex = position.getPosition().getLine();
+            int currentCharIndex = position.getPosition().getCharacter();
+
+            int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
+
+            logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+
+            if (!MATLABEngineSingleton.getInstance().isEngineReady()) {
+                logger.info("MATLAB Engine not ready");
+                return null;
+            }
+
+            String rs;
+            SignatureHelp signatureHelp = null;
+            try {
+                MatlabEngine eng = MATLABEngineSingleton.getInstance().engine;
+                eng.putVariable("str___", src.substring(0, byteIndex));
+                eng.eval("import com.mathworks.mlwidgets.help.functioncall.*;" +
+                        "fc___ = MFunctionCall.getInstance(str___);" +
+                        "result___ = char(fc___.createSignatureString());", MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
+                rs = eng.getVariable("result___");
+
+                List<SignatureInformation> items = new ArrayList<>();
+
+                final Matcher matcher = Pattern.compile("<div>(.+?)</div>").matcher(rs);
+                int activeSignature = 0;
+                int activeParameter = 0;
+                while(matcher.find()) {
+                    String item = matcher.group(1);
+
+                    int boldIndex = item.indexOf("<b>");
+                    if (boldIndex > -1){
+                        int commaIndex = 0, activeArgIndex = -1;
+                        while (commaIndex != -1 && commaIndex < boldIndex) {
+                            commaIndex = item.indexOf(",", commaIndex + 1);
+                            activeArgIndex++;
+                        }
+                        if (activeParameter < activeArgIndex)
+                            activeParameter = activeArgIndex;
+                    } else {
+                        activeParameter = -1;
+                    }
+
+                    item = item.replaceAll("\\<[^>]*>","");
+                    SignatureInformation info = new SignatureInformation(item);
+
+                    final Matcher matcher2 = Pattern.compile("\\((.*?)\\)").matcher(item);
+                    if(matcher2.find()) {
+                        info.setParameters(Arrays.asList(matcher2.group(1).split(",")).stream().map(ParameterInformation::new).collect(Collectors.toList()));
+                    }
+                    items.add(info);
+                }
+                signatureHelp = new SignatureHelp(items, activeSignature, activeParameter);
+
+                logger.info(rs);
+            } catch (Exception e) {
+                logger.info("", e);
+                return null;
+            }
+            return signatureHelp;
+        });
     }
 
     @Override

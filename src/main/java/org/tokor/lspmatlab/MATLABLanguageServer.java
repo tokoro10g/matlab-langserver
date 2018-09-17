@@ -5,6 +5,8 @@ import org.eclipse.lsp4j.services.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 public final class MATLABLanguageServer implements LanguageServer, LanguageClientAware {
@@ -31,6 +33,10 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
         CompletionOptions completionOptions = new CompletionOptions();
         completionOptions.setResolveProvider(true);
         capabilities.setCompletionProvider(completionOptions);
+
+        SignatureHelpOptions signatureHelpOptions = new SignatureHelpOptions();
+        signatureHelpOptions.setTriggerCharacters(Arrays.asList("("));
+        capabilities.setSignatureHelpProvider(signatureHelpOptions);
 
         InitializeResult result = new InitializeResult(capabilities);
         return CompletableFuture.completedFuture(result);
