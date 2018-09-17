@@ -158,11 +158,11 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 final Matcher matcher = Pattern.compile("<div>(.+?)</div>").matcher(rs);
                 int activeSignature = 0;
                 int activeParameter = 0;
-                while(matcher.find()) {
+                while (matcher.find()) {
                     String item = matcher.group(1);
 
                     int boldIndex = item.indexOf("<b>");
-                    if (boldIndex > -1){
+                    if (boldIndex > -1) {
                         int commaIndex = 0, activeArgIndex = -1;
                         while (commaIndex != -1 && commaIndex < boldIndex) {
                             commaIndex = item.indexOf(",", commaIndex + 1);
@@ -174,11 +174,11 @@ public class MATLABTextDocumentService implements TextDocumentService {
                         activeParameter = -1;
                     }
 
-                    item = item.replaceAll("\\<[^>]*>","");
+                    item = item.replaceAll("\\<[^>]*>", "");
                     SignatureInformation info = new SignatureInformation(item);
 
                     final Matcher matcher2 = Pattern.compile("\\((.*?)\\)").matcher(item);
-                    if(matcher2.find()) {
+                    if (matcher2.find()) {
                         info.setParameters(Arrays.asList(matcher2.group(1).split(",")).stream().map(ParameterInformation::new).collect(Collectors.toList()));
                     }
                     items.add(info);
