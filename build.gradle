@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+}
+
+group 'org.tokor'
+version '0.1'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile(
+            'org.eclipse.lsp4j:org.eclipse.lsp4j:0.5.0',
+            'org.slf4j:slf4j-api:1.7.25',
+            'org.slf4j:jul-to-slf4j:1.7.25',
+            'ch.qos.logback:logback-classic:1.2.3',
+            'org.json:json:20180813'
+    )
+    compileOnly files(
+            '/usr/local/MATLAB/R2018a/extern/engines/java/jar/engine.jar',
+            '/usr/local/MATLAB/R2018a/java/jar/jmi.jar',
+            '/usr/local/MATLAB/R2018a/java/jar/mlwidgets.jar',
+            '/usr/local/MATLAB/R2018a/java/jar/widgets.jar',
+            '/usr/local/MATLAB/R2018a/java/jar/mde.jar'
+    )
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.tokor.lspmatlab.Application'
+    }
+    // Fat Jar
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+}
