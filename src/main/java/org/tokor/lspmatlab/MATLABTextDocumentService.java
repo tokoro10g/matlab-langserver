@@ -2,13 +2,11 @@ package org.tokor.lspmatlab;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.*;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,24 +78,25 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 return Either.forLeft(new ArrayList());
             }
 
-            JSONObject obj = new JSONObject(rs);
-            JSONArray arr;
+            JsonParser parser = new JsonParser();
+            JsonElement obj = parser.parse(rs);
+            JsonArray arr;
             List<CompletionItem> comp = new ArrayList<>();
-            if (obj.isEmpty()) {
+            if (obj.isJsonNull()) {
                 return Either.forLeft(new ArrayList());
             }
             try {
-                arr = obj.getJSONArray("finalCompletions");
+                arr = obj.getAsJsonObject().getAsJsonArray("finalCompletions");
                 int cnt = 0;
                 for (Object o : arr) {
-                    String label = (String) ((JSONObject) o).get("popupCompletion");
+                    String label = ((JsonObject) o).getAsJsonPrimitive("popupCompletion").getAsString();
                     //logger.info("item:" + label);
                     CompletionItem item = new CompletionItem(label);
                     item.setLabel(label);
                     item.setInsertText(label);
                     CompletionItemKind kind;
                     try {
-                        kind = kindMap.get((String) ((JSONObject) o).get("matchType"));
+                        kind = kindMap.get(((JsonObject) o).getAsJsonPrimitive("matchType").getAsString());
                     } catch (Exception e) {
                         kind = CompletionItemKind.Text;
                     }
@@ -105,7 +104,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
                     item.setData(++cnt);
                     comp.add(item);
                 }
-            } catch (JSONException je) {
+            } catch (JsonSyntaxException je) {
                 logger.info("Invalid result", je);
                 return Either.forLeft(new ArrayList());
             }
