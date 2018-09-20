@@ -23,8 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.mathworks.engine.*;
-
 public class MATLABTextDocumentService implements TextDocumentService {
 
     public static final Logger logger = LoggerFactory.getLogger(MATLABTextDocumentService.class);
@@ -84,6 +82,9 @@ public class MATLABTextDocumentService implements TextDocumentService {
             JSONObject obj = new JSONObject(rs);
             JSONArray arr;
             List<CompletionItem> comp = new ArrayList<>();
+            if(obj.isEmpty()){
+                return Either.forLeft(new ArrayList());
+            }
             try {
                 arr = obj.getJSONArray("finalCompletions");
                 int cnt = 0;
