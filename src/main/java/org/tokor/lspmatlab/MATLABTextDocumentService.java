@@ -71,7 +71,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("Completion: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
+            String rs = (String) MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
                     "tc___ = TabCompletionImpl();" +
                     "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
                     "while ~f___.isDone(); pause(0.01); end;" +
@@ -83,7 +83,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
             JSONObject obj = new JSONObject(rs);
             JSONArray arr;
             List<CompletionItem> comp = new ArrayList<>();
-            if(obj.isEmpty()){
+            if (obj.isEmpty()) {
                 return Either.forLeft(new ArrayList());
             }
             try {
@@ -134,7 +134,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             logger.info("SignatureHelp: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
+            String rs = (String) MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
                     "fc___ = MFunctionCall.getInstance(str___);" +
                     "result___ = char(fc___.createSignatureString());", "str___", src.substring(0, byteIndex), "result___");
             if (rs == null) {
@@ -200,7 +200,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 }
             }
 
-            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
+            String rs = (String) MATLABEngineSingleton.getInstance().evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
             if (rs == null) {
                 return null;
             }
