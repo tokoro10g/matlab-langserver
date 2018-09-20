@@ -70,9 +70,9 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
 
-            logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+            logger.info("Completion: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
+            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
                     "tc___ = TabCompletionImpl();" +
                     "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
                     "while ~f___.isDone(); pause(0.01); end;" +
@@ -130,9 +130,9 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
 
-            logger.info("l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+            logger.info("SignatureHelp: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
 
-            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
+            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
                     "fc___ = MFunctionCall.getInstance(str___);" +
                     "result___ = char(fc___.createSignatureString());", "str___", src.substring(0, byteIndex), "result___");
             if (rs == null) {
@@ -183,6 +183,8 @@ public class MATLABTextDocumentService implements TextDocumentService {
             int currentCharIndex = position.getPosition().getCharacter();
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
+            logger.info("Definition: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+
             String functionName = "";
             final Matcher matcher = Pattern.compile("\\w+").matcher(src);
             int start = 0;
@@ -196,7 +198,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 }
             }
 
-            String rs = MATLABEngineSingleton.getInstance().evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
+            String rs = (String)MATLABEngineSingleton.getInstance().evalInMATLAB("result___ = which(fn___)", "fn___", functionName, "result___");
             if (rs == null) {
                 return null;
             }

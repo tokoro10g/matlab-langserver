@@ -1,6 +1,5 @@
 package org.tokor.lspmatlab;
 
-import com.mathworks.engine.FutureMatlab;
 import com.mathworks.engine.MatlabEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +31,16 @@ public class MATLABEngineSingleton {
         return engine != null;
     }
 
-    public String evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
+    public Object evalInMATLAB(String statement) {
+        return evalInMATLAB(statement, "tmp___", 0, "tmp___");
+    }
+
+    public Object evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
         if (!isEngineReady()) {
             logger.info("MATLAB Engine not ready");
             return null;
         }
-        String result;
+        Object result;
         try {
             engine.putVariable(varIn, valueIn);
             engine.eval(statement, MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
