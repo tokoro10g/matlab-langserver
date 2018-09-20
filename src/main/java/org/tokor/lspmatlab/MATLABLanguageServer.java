@@ -17,7 +17,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
     @Override
     public void initialized(InitializedParams params) {
-        client.logMessage(new MessageParams(MessageType.Info, "hello, world!"));
+        client.logMessage(new MessageParams(MessageType.Info, "MATLAB Language Server Initialized"));
     }
 
     public MATLABLanguageServer(Runnable shutdownHandler) {
@@ -51,7 +51,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
         WorkspaceServerCapabilities workspace = new WorkspaceServerCapabilities();
         WorkspaceFoldersOptions foldersOptions = new WorkspaceFoldersOptions();
         foldersOptions.setSupported(true);
-        foldersOptions.setChangeNotifications(false);
+        foldersOptions.setChangeNotifications(true);
         workspace.setWorkspaceFolders(foldersOptions);
         capabilities.setWorkspace(workspace);
 
@@ -61,7 +61,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
     @Override
     public CompletableFuture<Object> shutdown() {
-        logger.info("shutdown received");
+        logger.info("Shutdown Received");
         try {
             MATLABEngineSingleton.getInstance().engine.close();
         } catch (Exception e) {
@@ -73,7 +73,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
     @Override
     public void exit() {
-        logger.info("exit received");
+        logger.info("Exit Received");
         try {
             MATLABEngineSingleton.getInstance().engine.close();
         } catch (Exception e) {
