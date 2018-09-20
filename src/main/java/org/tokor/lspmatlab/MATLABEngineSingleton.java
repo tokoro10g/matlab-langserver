@@ -4,6 +4,7 @@ import com.mathworks.engine.MatlabEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Writer;
 import java.util.concurrent.Future;
 
 public class MATLABEngineSingleton {
@@ -32,19 +33,31 @@ public class MATLABEngineSingleton {
     }
 
     public Object evalInMATLAB(String statement) {
-        return evalInMATLAB(statement, "tmp___", 0, "tmp___");
+        return evalInMATLAB(statement, null, null, null);
+    }
+
+    public Object evalInMATLAB(String statement, Writer writer) {
+        return evalInMATLAB(statement, null, null, null, writer);
     }
 
     public Object evalInMATLAB(String statement, String varIn, Object valueIn, String varOut) {
+        return evalInMATLAB(statement, varIn, valueIn, varOut, MatlabEngine.NULL_WRITER);
+    }
+
+    public Object evalInMATLAB(String statement, String varIn, Object valueIn, String varOut, Writer writer) {
         if (!isEngineReady()) {
             logger.info("MATLAB Engine not ready");
             return null;
         }
-        Object result;
+        Object result = null;
         try {
-            engine.putVariable(varIn, valueIn);
-            engine.eval(statement, MatlabEngine.NULL_WRITER, MatlabEngine.NULL_WRITER);
-            result = engine.getVariable(varOut);
+            if (varIn != null) {
+                engine.putVariable(varIn, valueIn);
+            }
+            engine.eval(statement, writer, writer);
+            if (varOut != null) {
+                result = engine.getVariable(varOut);
+            }
         } catch (Exception e) {
             logger.info("", e);
             return null;
