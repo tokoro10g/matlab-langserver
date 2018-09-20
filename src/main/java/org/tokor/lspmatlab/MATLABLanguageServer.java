@@ -39,6 +39,15 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
         capabilities.setDefinitionProvider(true);
 
+        capabilities.setCodeActionProvider(true);
+        ExecuteCommandOptions executeCommandOptions = new ExecuteCommandOptions(
+                Arrays.asList(
+                        "engine.run",
+                        "engine.runLine"
+                )
+        );
+        capabilities.setExecuteCommandProvider(executeCommandOptions);
+
         WorkspaceServerCapabilities workspace = new WorkspaceServerCapabilities();
         WorkspaceFoldersOptions foldersOptions = new WorkspaceFoldersOptions();
         foldersOptions.setSupported(true);

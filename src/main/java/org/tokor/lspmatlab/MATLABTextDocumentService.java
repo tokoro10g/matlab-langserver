@@ -259,6 +259,18 @@ public class MATLABTextDocumentService implements TextDocumentService {
         return CompletableFuture.completedFuture(null);
     }
 
+    @Override
+    public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
+        return CompletableFutures.computeAsync(checker -> {
+            Position position = params.getRange().getStart();
+            int currentLineIndex = position.getLine();
+            return Arrays.asList(
+                    Either.forLeft(new Command("Run code on MATLAB Engine", "engine.run", Arrays.asList(src, uri))),
+                    Either.forLeft(new Command("Run this line on MATLAB Engine", "engine.runLine", Arrays.asList(src, uri, currentLineIndex)))
+            );
+        });
+    }
+
     private void changeDirIfChanged(String newUri) {
         if (MATLABEngineSingleton.getInstance().isEngineReady() && !newUri.equals(uri)) {
             uri = newUri;
