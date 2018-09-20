@@ -39,6 +39,13 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
         capabilities.setDefinitionProvider(true);
 
+        WorkspaceServerCapabilities workspace = new WorkspaceServerCapabilities();
+        WorkspaceFoldersOptions foldersOptions = new WorkspaceFoldersOptions();
+        foldersOptions.setSupported(true);
+        foldersOptions.setChangeNotifications(false);
+        workspace.setWorkspaceFolders(foldersOptions);
+        capabilities.setWorkspace(workspace);
+
         InitializeResult result = new InitializeResult(capabilities);
         return CompletableFuture.completedFuture(result);
     }
@@ -74,7 +81,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
 
     @Override
     public WorkspaceService getWorkspaceService() {
-        return null;
+        return new MATLABWorkspaceService();
     }
 
     @Override

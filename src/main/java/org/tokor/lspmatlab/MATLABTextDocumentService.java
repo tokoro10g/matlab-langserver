@@ -28,6 +28,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
     public static final Logger logger = LoggerFactory.getLogger(MATLABTextDocumentService.class);
 
     private AtomicReference<String> src = new AtomicReference(ImmutableList.of());
+    private String uri;
 
     private static final Map<String, CompletionItemKind> kindMap = ImmutableMap.<String, CompletionItemKind>builder()
             .put("method", CompletionItemKind.Method)
@@ -259,13 +260,25 @@ public class MATLABTextDocumentService implements TextDocumentService {
         return CompletableFuture.completedFuture(null);
     }
 
+    private void changeDirIfChanged(String newUri) {
+        if (MATLABEngineSingleton.getInstance().isEngineReady() && !newUri.equals(uri)) {
+            uri = newUri;
+            String location = new File(uri).getParent();
+            MATLABEngineSingleton.getInstance().evalInMATLAB("cd " + location);
+        }
+    }
+
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
+        String newUri = params.getTextDocument().getUri().replaceAll("file://", "");
+        changeDirIfChanged(newUri);
         src.set(params.getTextDocument().getText());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
+        String newUri = params.getTextDocument().getUri().replaceAll("file://", "");
+        changeDirIfChanged(newUri);
         for (TextDocumentContentChangeEvent changeEvent : params.getContentChanges()) {
             // Will be full update because we specified that is all we support
             if (changeEvent.getRange() != null) {
