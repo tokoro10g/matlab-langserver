@@ -20,11 +20,7 @@ dependencies {
             'org.json:json:20180813'
     )
     compileOnly files(
-            '/usr/local/MATLAB/R2018a/extern/engines/java/jar/engine.jar',
-            '/usr/local/MATLAB/R2018a/java/jar/jmi.jar',
-            '/usr/local/MATLAB/R2018a/java/jar/mlwidgets.jar',
-            '/usr/local/MATLAB/R2018a/java/jar/widgets.jar',
-            '/usr/local/MATLAB/R2018a/java/jar/mde.jar'
+            '/usr/local/MATLAB/R2018a/extern/engines/java/jar/engine.jar'
     )
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
