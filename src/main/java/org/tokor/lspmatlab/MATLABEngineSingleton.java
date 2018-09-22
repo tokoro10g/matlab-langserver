@@ -15,9 +15,21 @@ public class MATLABEngineSingleton {
     private Future<MatlabEngine> future;
 
     private MATLABEngineSingleton() {
-        this.future = MatlabEngine.startMatlabAsync();
+        String[] engines = {};
+        try {
+            engines = MatlabEngine.findMatlab();
+        } catch (Exception e) {
+            logger.info("", e);
+        }
+        if (engines.length == 0) {
+            logger.info("Could not find existing sessions. Starting MATLAB Engine...");
+            String[] options = {"-r", "matlab.engine.shareEngine"};
+            this.future = MatlabEngine.startMatlabAsync(options);
+        } else {
+            logger.info("Connecting to MATLAB Engine (" + engines[0] + ")...");
+            this.future = MatlabEngine.connectMatlabAsync(engines[0]);
+        }
         this.engine = null;
-        logger.info("Starting MATLAB Engine...");
     }
 
     public boolean isEngineReady() {
