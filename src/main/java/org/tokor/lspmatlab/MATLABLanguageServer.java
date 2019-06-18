@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 public final class MATLABLanguageServer implements LanguageServer, LanguageClientAware {
@@ -34,7 +35,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
         capabilities.setCompletionProvider(completionOptions);
 
         SignatureHelpOptions signatureHelpOptions = new SignatureHelpOptions();
-        signatureHelpOptions.setTriggerCharacters(Arrays.asList("("));
+        signatureHelpOptions.setTriggerCharacters(Collections.singletonList("("));
         capabilities.setSignatureHelpProvider(signatureHelpOptions);
 
         capabilities.setDefinitionProvider(true);
@@ -43,6 +44,7 @@ public final class MATLABLanguageServer implements LanguageServer, LanguageClien
         ExecuteCommandOptions executeCommandOptions = new ExecuteCommandOptions(
                 Arrays.asList(
                         "engine.run",
+                        "engine.runSection",
                         "engine.runLine"
                 )
         );

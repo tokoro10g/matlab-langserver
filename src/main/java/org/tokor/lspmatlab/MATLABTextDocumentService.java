@@ -1,6 +1,5 @@
 package org.tokor.lspmatlab;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import org.eclipse.lsp4j.*;
@@ -11,10 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -25,7 +21,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
     public static final Logger logger = LoggerFactory.getLogger(MATLABTextDocumentService.class);
 
-    private AtomicReference<String> src = new AtomicReference(ImmutableList.of());
+    private AtomicReference<String> src = new AtomicReference<>();
     private String uri;
 
     private static final Map<String, CompletionItemKind> kindMap = ImmutableMap.<String, CompletionItemKind>builder()
@@ -67,15 +63,15 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
 
-            logger.info("Completion: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+            logger.info("Completion: l" + currentLineIndex + ":" + currentCharIndex + "/" + byteIndex);
 
             String rs = (String) MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.jmi.tabcompletion.*;" +
                     "tc___ = TabCompletionImpl();" +
-                    "f___ = tc___.getJSONCompletions(str___, " + Integer.toString(byteIndex) + ");" +
+                    "f___ = tc___.getJSONCompletions(str___, " + byteIndex + ");" +
                     "while ~f___.isDone(); pause(0.01); end;" +
                     "result___ = f___.get();", "str___", src, "result___");
             if (rs == null) {
-                return Either.forLeft(new ArrayList());
+                return Either.forLeft(new ArrayList<>());
             }
 
             JsonParser parser = new JsonParser();
@@ -83,7 +79,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
             JsonArray arr;
             List<CompletionItem> comp = new ArrayList<>();
             if (obj.isJsonNull()) {
-                return Either.forLeft(new ArrayList());
+                return Either.forLeft(new ArrayList<>());
             }
             try {
                 arr = obj.getAsJsonObject().getAsJsonArray("finalCompletions");
@@ -106,7 +102,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
                 }
             } catch (JsonSyntaxException je) {
                 logger.info("Invalid result", je);
-                return Either.forLeft(new ArrayList());
+                return Either.forLeft(new ArrayList<>());
             }
             return Either.forLeft(comp);
         });
@@ -114,11 +110,13 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
@@ -131,7 +129,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
 
-            logger.info("SignatureHelp: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+            logger.info("SignatureHelp: l" + currentLineIndex + ":" + currentCharIndex + "/" + byteIndex);
 
             String rs = (String) MATLABEngineSingleton.getInstance().evalInMATLAB("import com.mathworks.mlwidgets.help.functioncall.*;" +
                     "fc___ = MFunctionCall.getInstance(str___);" +
@@ -162,12 +160,12 @@ public class MATLABTextDocumentService implements TextDocumentService {
                     activeParameter = -1;
                 }
 
-                item = item.replaceAll("\\<[^>]*>", "");
+                item = item.replaceAll("<[^>]*>", "");
                 SignatureInformation info = new SignatureInformation(item);
 
                 final Matcher matcher2 = Pattern.compile("\\((.*?)\\)").matcher(item);
                 if (matcher2.find()) {
-                    info.setParameters(Arrays.asList(matcher2.group(1).split(",")).stream().map(ParameterInformation::new).collect(Collectors.toList()));
+                    info.setParameters(Arrays.stream(matcher2.group(1).split(",")).map(ParameterInformation::new).collect(Collectors.toList()));
                 }
                 items.add(info);
             }
@@ -177,19 +175,18 @@ public class MATLABTextDocumentService implements TextDocumentService {
     }
 
     @Override
-    public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
+    public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(TextDocumentPositionParams position) {
         return CompletableFutures.computeAsync(checker -> {
             String src = this.src.get();
             int currentLineIndex = position.getPosition().getLine();
             int currentCharIndex = position.getPosition().getCharacter();
 
             int byteIndex = lineNumToByteNum(src, currentLineIndex, currentCharIndex);
-            logger.info("Definition: l" + Integer.toString(currentLineIndex) + ":" + Integer.toString(currentCharIndex) + "/" + Integer.toString(byteIndex));
+            logger.info("Definition: l" + currentLineIndex + ":" + currentCharIndex + "/" + byteIndex);
 
             String functionName = "";
             final Matcher matcher = Pattern.compile("\\w+").matcher(src);
-            int start = 0;
-            int end = 0;
+            int start, end;
             while (matcher.find()) {
                 start = matcher.start();
                 end = matcher.end();
@@ -215,47 +212,55 @@ public class MATLABTextDocumentService implements TextDocumentService {
             }
 
             Location l = new Location("file://" + rs, new Range(new Position(0, 0), new Position(0, 0)));
-            return Arrays.asList(l);
+            return Either.forLeft(Collections.singletonList(l));
         });
     }
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
+        //TODO: Implement
         return CompletableFuture.completedFuture(null);
     }
 
@@ -266,6 +271,7 @@ public class MATLABTextDocumentService implements TextDocumentService {
             int currentLineIndex = position.getLine();
             return Arrays.asList(
                     Either.forLeft(new Command("Run code on MATLAB Engine", "engine.run", Arrays.asList(src, uri))),
+                    Either.forLeft(new Command("Run this section on MATLAB Engine", "engine.runSection", Arrays.asList(src, uri, currentLineIndex))),
                     Either.forLeft(new Command("Run this line on MATLAB Engine", "engine.runLine", Arrays.asList(src, uri, currentLineIndex)))
             );
         });

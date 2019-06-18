@@ -10,7 +10,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 public final class Application {
     private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
